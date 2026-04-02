@@ -27,7 +27,7 @@ export default function DrawerStackNavigator() {
   return (
     <DrawerStack.Navigator screenOptions={{headerShown: false}}>
       <DrawerStack.Screen name={"HomeFeed"} component={HomeScreen} />
-      <DrawerStack.Screen name={"TrendingScreen"} component={TrendingScreen} />
+      {/*<DrawerStack.Screen name={"TrendingScreen"} component={TrendingScreen} />*/}
       <DrawerStack.Screen
         name={"SubscriptionScreen"}
         component={SubscriptionScreen}

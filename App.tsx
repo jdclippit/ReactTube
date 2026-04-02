@@ -1,10 +1,9 @@
 import "react-native-url-polyfill/auto";
 import "event-target-polyfill";
 import "fast-text-encoding";
-import "react-native-quick-base64";
 
 import React from "react";
-import {StatusBar, useColorScheme} from "react-native";
+import {StatusBar, Text, useColorScheme} from "react-native";
 import FlashMessage from "react-native-flash-message";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
 import {PaperProvider} from "react-native-paper";
@@ -30,36 +29,35 @@ const App = () => {
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>
-      <PaperProvider>
-        <AppStyleProvider>
-          <BackgroundWrapper>
-            <AppDataContextProvider>
-              <YoutubeContextProvider>
-                <AccountContextProvider>
-                  <MusicPlayerContext>
-                    <DownloaderContext>
-                      <PlaylistManagerContext>
-                        <StatusBar
-                          // TODO: Currently only dark-mode exists
-                          barStyle={
-                            isDarkMode ? "light-content" : "light-content"
-                          }
-                        />
-                        <VideoPlayerSettingsContext>
-                          <VideoProvider>
-                            <Navigation />
-                          </VideoProvider>
-                        </VideoPlayerSettingsContext>
-                        <FlashMessage position={"top"} />
-                      </PlaylistManagerContext>
-                    </DownloaderContext>
-                  </MusicPlayerContext>
-                </AccountContextProvider>
-              </YoutubeContextProvider>
-            </AppDataContextProvider>
-          </BackgroundWrapper>
-        </AppStyleProvider>
-      </PaperProvider>
+      <AppStyleProvider>
+        <BackgroundWrapper>
+          <AppDataContextProvider>
+            <YoutubeContextProvider>
+              <AccountContextProvider>
+                <MusicPlayerContext>
+                  <DownloaderContext>
+                    <PlaylistManagerContext>
+                      <StatusBar
+                        // TODO: Currently only dark-mode exists
+                        barStyle={
+                          isDarkMode ? "light-content" : "light-content"
+                        }
+                      />
+                      <VideoPlayerSettingsContext>
+                        <VideoProvider>
+                          <Navigation />
+                          {/*<Text style={{color: "white"}}>{"TEST2"}</Text>*/}
+                        </VideoProvider>
+                      </VideoPlayerSettingsContext>
+                      <FlashMessage position={"top"} />
+                    </PlaylistManagerContext>
+                  </DownloaderContext>
+                </MusicPlayerContext>
+              </AccountContextProvider>
+            </YoutubeContextProvider>
+          </AppDataContextProvider>
+        </BackgroundWrapper>
+      </AppStyleProvider>
     </GestureHandlerRootView>
   );
 };
