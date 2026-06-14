@@ -4,4 +4,43 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - run: echo "hello"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - name: Patch app.json
+        run: python3 -c "
+import json
+d=json.load(open('app.json'))
+plugs=[]
+for p in d['expo']['plugins']:
+    if isinstance(p,list):
+        if 'apple-targets' in p[0]: continue
+        if len(p)>1 and isinstance(p[1],dict): p[1]['isTV']=False
+    plugs.append(p)
+d['expo']['plugins']=plugs
+json.dump(d,open('app.json','w'),indent=2)
+print('patched: removed apple-targets, isTV=false')
+"
+      - run: npx expo prebuild --clean
+      - name: Build
+        run: |
+          xcodebuild -workspace ios/*.xcworkspace \
+            -scheme reacttube \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Package IPA
+        run: |
+          APP=$(find build -name "*.app" -type d | head -1)
+          echo "Found: $APP"
+          mkdir -p Payload
+          cp -rp "$APP" Payload/
+          zip -r ReactTube.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ReactTube.ipa
