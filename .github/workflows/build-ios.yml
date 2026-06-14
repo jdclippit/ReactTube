@@ -1,0 +1,42 @@
+name: Build iOS IPA
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - run: npx expo prebuild --clean
+      - name: Detect scheme
+        run: |
+          SCHEME=$(xcodebuild -list -workspace ios/*.xcworkspace 2>/dev/null | grep -A1 "Schemes:" | tail -1 | xargs)
+          [ -z "$SCHEME" ] && SCHEME=$(xcodebuild -list -workspace tvos/*.xcworkspace 2>/dev/null | grep -A1 "Schemes:" | tail -1 | xargs)
+          echo "SCHEME=$SCHEME" >> $GITHUB_ENV
+          echo "Detected scheme: $SCHEME"
+      - name: Build IPA
+        run: |
+          WORKSPACE=$(ls ios/*.xcworkspace 2>/dev/null || ls tvos/*.xcworkspace 2>/dev/null)
+          SDK=iphoneos
+          echo "$WORKSPACE" | grep -q tvos && SDK=appletvos
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk $SDK \
+            -arch arm64 \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -rp build/Build/Products/Release-*/ReactTube.app Payload/
+          zip -r ReactTube.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ReactTube.ipa
