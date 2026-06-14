@@ -12,20 +12,18 @@ jobs:
           node-version: 20
       - run: npm ci --legacy-peer-deps
       - run: npx expo prebuild --clean
-      - name: Detect scheme
+      - name: Detect workspace
         id: scheme
         run: |
           WORKSPACE=$(find ios -maxdepth 1 -name "*.xcworkspace" | head -1)
           echo "workspace=$WORKSPACE" >> $GITHUB_OUTPUT
-          SCHEME=$(xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | awk '/Schemes:/{found=1;next} found{print $0; exit}' | xargs)
-          echo "scheme=$SCHEME" >> $GITHUB_OUTPUT
-          echo "Detected scheme: $SCHEME"
+          echo "Detected workspace: $WORKSPACE"
       - name: Build IPA
         run: |
           SDK=iphoneos
           echo "${{ steps.scheme.outputs.workspace }}" | grep -q tvos && SDK=appletvos
           xcodebuild -workspace "${{ steps.scheme.outputs.workspace }}" \
-            -scheme "${{ steps.scheme.outputs.scheme }}" \
+            -scheme reacttube \
             -configuration Release \
             -sdk $SDK \
             -arch arm64 \
@@ -34,7 +32,8 @@ jobs:
             build
       - name: Package IPA
         run: |
-          APP=$(ls -d build/Build/Products/Release-*/*.app | head -1)
+          APP=$(find build -name "*.app" -type d | head -1)
+          echo "Found app: $APP"
           mkdir -p Payload
           cp -rp "$APP" Payload/
           zip -r ReactTube.ipa Payload
