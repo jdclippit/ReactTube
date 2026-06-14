@@ -11,6 +11,18 @@ jobs:
         with:
           node-version: 20
       - run: npm ci --legacy-peer-deps
+      - name: Patch app.json for iOS (not tvOS)
+        run: |
+          python3 -c "
+import json
+with open('app.json') as f:
+    d = json.load(f)
+for p in d['expo']['plugins']:
+    if isinstance(p, list) and len(p) > 1 and isinstance(p[1], dict):
+        p[1]['isTV'] = False
+with open('app.json', 'w') as f:
+    json.dump(d, f, indent=2)
+" && echo "Patched isTV -> false"
       - run: npx expo prebuild --clean
       - name: Detect workspace
         id: scheme
