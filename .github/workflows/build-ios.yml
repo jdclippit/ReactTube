@@ -13,18 +13,19 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npx expo prebuild --clean
       - name: Detect scheme
+        id: scheme
         run: |
-          SCHEME=$(xcodebuild -list -workspace ios/*.xcworkspace 2>/dev/null | grep -A1 "Schemes:" | tail -1 | xargs)
-          [ -z "$SCHEME" ] && SCHEME=$(xcodebuild -list -workspace tvos/*.xcworkspace 2>/dev/null | grep -A1 "Schemes:" | tail -1 | xargs)
-          echo "SCHEME=$SCHEME" >> $GITHUB_ENV
+          WORKSPACE=$(find ios -maxdepth 1 -name "*.xcworkspace" | head -1)
+          echo "workspace=$WORKSPACE" >> $GITHUB_OUTPUT
+          SCHEME=$(xcodebuild -list -json -workspace "$WORKSPACE" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print([s['name'] for s in d['workspace']['schemes'] if 'Pods' not in s['name'] and 'boost' not in s['name']][0])")
+          echo "scheme=$SCHEME" >> $GITHUB_OUTPUT
           echo "Detected scheme: $SCHEME"
       - name: Build IPA
         run: |
-          WORKSPACE=$(ls ios/*.xcworkspace 2>/dev/null || ls tvos/*.xcworkspace 2>/dev/null)
           SDK=iphoneos
-          echo "$WORKSPACE" | grep -q tvos && SDK=appletvos
-          xcodebuild -workspace "$WORKSPACE" \
-            -scheme "$SCHEME" \
+          echo "${{ steps.scheme.outputs.workspace }}" | grep -q tvos && SDK=appletvos
+          xcodebuild -workspace "${{ steps.scheme.outputs.workspace }}" \
+            -scheme "${{ steps.scheme.outputs.scheme }}" \
             -configuration Release \
             -sdk $SDK \
             -arch arm64 \
@@ -33,8 +34,9 @@ jobs:
             build
       - name: Package IPA
         run: |
+          APP=$(ls -d build/Build/Products/Release-*/*.app | head -1)
           mkdir -p Payload
-          cp -rp build/Build/Products/Release-*/ReactTube.app Payload/
+          cp -rp "$APP" Payload/
           zip -r ReactTube.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
