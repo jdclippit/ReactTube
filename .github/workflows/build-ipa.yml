@@ -36,7 +36,6 @@ jobs:
             -scheme reacttube \
             -configuration Release \
             -sdk iphoneos \
-            -arch arm64 \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             -destination 'generic/platform=iOS' \
