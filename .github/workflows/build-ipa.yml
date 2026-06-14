@@ -13,36 +13,43 @@ jobs:
           node-version: 20
       - run: npm ci --legacy-peer-deps
 
-      - name: Patch for iOS (not tvOS)
+      - name: Patch for iOS (strip tvOS + watch plugins)
         run: |
-          cat > /tmp/patch.py << 'EOF'
-          import json
-          with open('app.json') as f:
-              d = json.load(f)
-          for p in d['expo']['plugins']:
-              if isinstance(p, list) and len(p) > 1 and isinstance(p[1], dict):
-                  if 'isTV' in p[1]:
-                      p[1]['isTV'] = False
-          with open('app.json', 'w') as f:
-              json.dump(d, f, indent=2)
-          EOF
-          python3 /tmp/patch.py
+          python3 -c "
+import json
+with open('app.json') as f:
+    d = json.load(f)
+plugins = []
+for p in d['expo']['plugins']:
+    name = p[0] if isinstance(p, list) else p
+    if 'apple-targets' in name:
+        continue
+    if isinstance(p, list) and len(p) > 1 and isinstance(p[1], dict) and 'isTV' in p[1]:
+        p[1]['isTV'] = False
+        p[1].pop('appleTeamId', None)
+    plugins.append(p)
+d['expo']['plugins'] = plugins
+with open('app.json', 'w') as f:
+    json.dump(d, f, indent=2)
+print('Patched: removed apple-targets plugin, isTV=false')
+"
 
       - run: npx expo prebuild --clean
 
       - name: Build
         run: |
-          xcodebuild -project ios/reacttube.xcodeproj \
-            -target reacttube \
+          xcodebuild -workspace ios/*.xcworkspace \
+            -scheme reacttube \
             -configuration Release \
             -sdk iphoneos \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=$PWD/build/Release \
             build
 
       - name: Package IPA
         run: |
-          APP=$(find $PWD/build -name "*.app" -type d | head -1)
+          APP=$(find . -path "*/Build/Products/Release-iphoneos/*.app" -type d | head -1)
+          echo "Found app: $APP"
           mkdir -p Payload
           cp -rp "$APP" Payload/
           zip -r ReactTube.ipa Payload
