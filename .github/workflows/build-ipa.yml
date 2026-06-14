@@ -32,8 +32,8 @@ jobs:
 
       - name: Build
         run: |
-          xcodebuild -workspace ios/*.xcworkspace \
-            -scheme reacttube \
+          xcodebuild -project ios/reacttube.xcodeproj \
+            -target reacttube \
             -configuration Release \
             -sdk iphoneos \
             -arch arm64 \
