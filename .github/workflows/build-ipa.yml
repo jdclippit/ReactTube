@@ -1,60 +1,7 @@
 name: Build iOS IPA
-
-on:
-  workflow_dispatch:
-
+on: workflow_dispatch
 jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci --legacy-peer-deps
-
-      - name: Patch for iOS (strip tvOS + watch plugins)
-        run: |
-          python3 -c "
-import json
-with open('app.json') as f:
-    d = json.load(f)
-plugins = []
-for p in d['expo']['plugins']:
-    name = p[0] if isinstance(p, list) else p
-    if 'apple-targets' in name:
-        continue
-    if isinstance(p, list) and len(p) > 1 and isinstance(p[1], dict) and 'isTV' in p[1]:
-        p[1]['isTV'] = False
-        p[1].pop('appleTeamId', None)
-    plugins.append(p)
-d['expo']['plugins'] = plugins
-with open('app.json', 'w') as f:
-    json.dump(d, f, indent=2)
-print('Patched: removed apple-targets plugin, isTV=false')
-"
-
-      - run: npx expo prebuild --clean
-
-      - name: Build
-        run: |
-          xcodebuild -workspace ios/*.xcworkspace \
-            -scheme reacttube \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            build
-
-      - name: Package IPA
-        run: |
-          APP=$(find . -path "*/Build/Products/Release-iphoneos/*.app" -type d | head -1)
-          echo "Found app: $APP"
-          mkdir -p Payload
-          cp -rp "$APP" Payload/
-          zip -r ReactTube.ipa Payload
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios-ipa
-          path: ReactTube.ipa
+      - run: echo "hello"
