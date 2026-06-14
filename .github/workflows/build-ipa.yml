@@ -9,20 +9,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci --legacy-peer-deps
-      - name: Patch app.json
-        run: python3 -c "
-import json
-d=json.load(open('app.json'))
-plugs=[]
-for p in d['expo']['plugins']:
-    if isinstance(p,list):
-        if 'apple-targets' in p[0]: continue
-        if len(p)>1 and isinstance(p[1],dict): p[1]['isTV']=False
-    plugs.append(p)
-d['expo']['plugins']=plugs
-json.dump(d,open('app.json','w'),indent=2)
-print('patched: removed apple-targets, isTV=false')
-"
+      - run: python3 scripts/patch_ios.py
       - run: npx expo prebuild --clean
       - name: Build
         run: |
@@ -33,7 +20,7 @@ print('patched: removed apple-targets, isTV=false')
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
-      - name: Package IPA
+      - name: Package
         run: |
           APP=$(find build -name "*.app" -type d | head -1)
           echo "Found: $APP"
